@@ -105,6 +105,10 @@ public class RxBleGattCallback {
 
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            byte[] value;
+            synchronized (characteristic) {
+                value = characteristic.getValue();
+            }
             LoggerUtil.logCallback("onCharacteristicRead", gatt, status, characteristic, true);
             nativeCallbackDispatcher.notifyNativeReadCallback(gatt, characteristic, status);
             super.onCharacteristicRead(gatt, characteristic, status);
@@ -112,12 +116,16 @@ public class RxBleGattCallback {
             if (readCharacteristicOutput.hasObservers() && !propagateErrorIfOccurred(
                     readCharacteristicOutput, gatt, characteristic, status, BleGattOperationType.CHARACTERISTIC_READ
             )) {
-                readCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), characteristic.getValue()));
+                readCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), value));
             }
         }
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            byte[] value;
+            synchronized (characteristic) {
+                value = characteristic.getValue();
+            }
             LoggerUtil.logCallback("onCharacteristicWrite", gatt, status, characteristic, false);
             nativeCallbackDispatcher.notifyNativeWriteCallback(gatt, characteristic, status);
             super.onCharacteristicWrite(gatt, characteristic, status);
@@ -125,29 +133,31 @@ public class RxBleGattCallback {
             if (writeCharacteristicOutput.hasObservers() && !propagateErrorIfOccurred(
                     writeCharacteristicOutput, gatt, characteristic, status, BleGattOperationType.CHARACTERISTIC_WRITE
             )) {
-                writeCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), characteristic.getValue()));
+                writeCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), value));
             }
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            LoggerUtil.logCallback("onCharacteristicChanged", gatt, characteristic, true);
-            nativeCallbackDispatcher.notifyNativeChangedCallback(gatt, characteristic);
-            super.onCharacteristicChanged(gatt, characteristic);
+            synchronized (characteristic) {
+                LoggerUtil.logCallback("onCharacteristicChanged", gatt, characteristic, true);
+                nativeCallbackDispatcher.notifyNativeChangedCallback(gatt, characteristic);
+                super.onCharacteristicChanged(gatt, characteristic);
 
-            /*
-             * It is important to call changedCharacteristicSerializedPublishRelay as soon as possible because a quick changing
-             * characteristic could lead to out-of-order execution since onCharacteristicChanged may be called on arbitrary
-             * threads.
-             */
-            if (changedCharacteristicSerializedPublishRelay.hasObservers()) {
-                changedCharacteristicSerializedPublishRelay.accept(
-                        new CharacteristicChangedEvent(
-                                characteristic.getUuid(),
-                                characteristic.getInstanceId(),
-                                characteristic.getValue()
-                        )
-                );
+                /*
+                 * It is important to call changedCharacteristicSerializedPublishRelay as soon as possible because a quick changing
+                 * characteristic could lead to out-of-order execution since onCharacteristicChanged may be called on arbitrary
+                 * threads.
+                 */
+                if (changedCharacteristicSerializedPublishRelay.hasObservers()) {
+                    changedCharacteristicSerializedPublishRelay.accept(
+                            new CharacteristicChangedEvent(
+                                    characteristic.getUuid(),
+                                    characteristic.getInstanceId(),
+                                    characteristic.getValue()
+                            )
+                    );
+                }
             }
         }
 

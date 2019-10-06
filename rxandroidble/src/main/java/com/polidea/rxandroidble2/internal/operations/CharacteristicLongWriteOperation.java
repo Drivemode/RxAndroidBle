@@ -184,7 +184,9 @@ public class CharacteristicLongWriteOperation extends QueueOperation<byte[]> {
         if (RxBleLog.isAtLeast(LogConstants.DEBUG)) {
             RxBleLog.d("Writing batch #%04d: %s", batchIndexGetter.get(), LoggerUtil.bytesToHex(bytesBatch));
         }
-        bluetoothGattCharacteristic.setValue(bytesBatch);
+        synchronized (bluetoothGattCharacteristic) {
+            bluetoothGattCharacteristic.setValue(bytesBatch);
+        }
         final boolean success = bluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
         if (!success) {
             throw new BleGattCannotStartException(bluetoothGatt, BleGattOperationType.CHARACTERISTIC_LONG_WRITE);
