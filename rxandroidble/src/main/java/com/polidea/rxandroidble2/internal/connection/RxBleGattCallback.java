@@ -158,6 +158,8 @@ public class RxBleGattCallback {
                             )
                     );
                 }
+                characteristic.setValue((byte[])null);
+                characteristic.notify();
             }
         }
 

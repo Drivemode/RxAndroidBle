@@ -41,6 +41,13 @@ public class CharacteristicWriteOperation extends SingleResponseOperation<byte[]
     @Override
     protected boolean startOperation(BluetoothGatt bluetoothGatt) {
         synchronized (bluetoothGattCharacteristic) {
+            if (bluetoothGattCharacteristic.getValue() != null) {
+                try {
+                    bluetoothGattCharacteristic.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             bluetoothGattCharacteristic.setValue(data);
         }
         return bluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
