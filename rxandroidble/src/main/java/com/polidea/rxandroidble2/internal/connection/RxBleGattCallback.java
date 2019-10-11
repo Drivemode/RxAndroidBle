@@ -123,17 +123,22 @@ public class RxBleGattCallback {
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             byte[] value;
+            //BluetoothGattCharacteristic copy;
             synchronized (characteristic) {
                 value = characteristic.getValue();
-            }
-            LoggerUtil.logCallback("onCharacteristicWrite", gatt, status, characteristic, false);
-            nativeCallbackDispatcher.notifyNativeWriteCallback(gatt, characteristic, status);
-            super.onCharacteristicWrite(gatt, characteristic, status);
+                //copy = new BluetoothGattCharacteristic(characteristic.getUuid(),
+                // characteristic.getProperties(), characteristic.getPermissions());
 
-            if (writeCharacteristicOutput.hasObservers() && !propagateErrorIfOccurred(
-                    writeCharacteristicOutput, gatt, characteristic, status, BleGattOperationType.CHARACTERISTIC_WRITE
-            )) {
-                writeCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), value));
+                LoggerUtil.logCallback("onCharacteristicWrite", gatt, status, characteristic, false);
+                nativeCallbackDispatcher.notifyNativeWriteCallback(gatt, characteristic, status);
+                super.onCharacteristicWrite(gatt, characteristic, status);
+
+                if (writeCharacteristicOutput.hasObservers() && !propagateErrorIfOccurred(
+                        writeCharacteristicOutput, gatt, characteristic, status, BleGattOperationType.CHARACTERISTIC_WRITE
+                )) {
+                    writeCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), value));
+                }
+                characteristic.setValue((byte[]) null);
             }
         }
 

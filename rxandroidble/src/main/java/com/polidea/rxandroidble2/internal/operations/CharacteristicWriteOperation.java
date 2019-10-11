@@ -2,6 +2,7 @@ package com.polidea.rxandroidble2.internal.operations;
 
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.util.Log;
 
 import com.polidea.rxandroidble2.exceptions.BleGattOperationType;
 import com.polidea.rxandroidble2.internal.SingleResponseOperation;
@@ -42,15 +43,18 @@ public class CharacteristicWriteOperation extends SingleResponseOperation<byte[]
     protected boolean startOperation(BluetoothGatt bluetoothGatt) {
         synchronized (bluetoothGattCharacteristic) {
             if (bluetoothGattCharacteristic.getValue() != null) {
+                Log.d("CharWriteOperation", "#*#*#*#*#*#*#* Going to wait "
+                        + LoggerUtil.bytesToHex(bluetoothGattCharacteristic.getValue()));
                 try {
                     bluetoothGattCharacteristic.wait();
+                    Log.d("CharWriteOperation", "#*#*#*#*#*#*#* Notified");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
             bluetoothGattCharacteristic.setValue(data);
+            return bluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
         }
-        return bluetoothGatt.writeCharacteristic(bluetoothGattCharacteristic);
     }
 
     @Override
