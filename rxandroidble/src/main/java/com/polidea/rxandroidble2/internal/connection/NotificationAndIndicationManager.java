@@ -143,6 +143,9 @@ class NotificationAndIndicationManager {
                     throw new BleCannotSetCharacteristicNotificationException(
                             characteristic, BleCannotSetCharacteristicNotificationException.CANNOT_SET_LOCAL_NOTIFICATION, null
                     );
+                } else {
+                    // set Value to null otherwise first wrtite attemp will cause a dead lock.
+                    characteristic.setValue((byte[]) null);
                 }
             }
         });

@@ -123,28 +123,23 @@ public class RxBleGattCallback {
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             byte[] value;
-            //BluetoothGattCharacteristic copy;
             synchronized (characteristic) {
                 value = characteristic.getValue();
-                //copy = new BluetoothGattCharacteristic(characteristic.getUuid(),
-                // characteristic.getProperties(), characteristic.getPermissions());
+            }
+            LoggerUtil.logCallback("onCharacteristicWrite", gatt, status, characteristic, false);
+            nativeCallbackDispatcher.notifyNativeWriteCallback(gatt, characteristic, status);
+            super.onCharacteristicWrite(gatt, characteristic, status);
 
-                LoggerUtil.logCallback("onCharacteristicWrite", gatt, status, characteristic, false);
-                nativeCallbackDispatcher.notifyNativeWriteCallback(gatt, characteristic, status);
-                super.onCharacteristicWrite(gatt, characteristic, status);
-
-                if (writeCharacteristicOutput.hasObservers() && !propagateErrorIfOccurred(
-                        writeCharacteristicOutput, gatt, characteristic, status, BleGattOperationType.CHARACTERISTIC_WRITE
-                )) {
-                    writeCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), value));
-                }
-                characteristic.setValue((byte[]) null);
+            if (writeCharacteristicOutput.hasObservers() && !propagateErrorIfOccurred(
+                    writeCharacteristicOutput, gatt, characteristic, status, BleGattOperationType.CHARACTERISTIC_WRITE
+            )) {
+                writeCharacteristicOutput.valueRelay.accept(new ByteAssociation<>(characteristic.getUuid(), value));
             }
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-            synchronized (characteristic) {
+            synchronized (characteristic) { // synchronize with write in CharacteristicWriteOperation.java
                 LoggerUtil.logCallback("onCharacteristicChanged", gatt, characteristic, true);
                 nativeCallbackDispatcher.notifyNativeChangedCallback(gatt, characteristic);
                 super.onCharacteristicChanged(gatt, characteristic);
@@ -163,6 +158,7 @@ public class RxBleGattCallback {
                             )
                     );
                 }
+                // when read is done set value to null then notify to thread waiting on write
                 characteristic.setValue((byte[]) null);
                 characteristic.notify();
             }

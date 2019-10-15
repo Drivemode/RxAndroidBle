@@ -42,11 +42,11 @@ public class CharacteristicWriteOperation extends SingleResponseOperation<byte[]
     @Override
     protected boolean startOperation(BluetoothGatt bluetoothGatt) {
         synchronized (bluetoothGattCharacteristic) {
-            if (bluetoothGattCharacteristic.getValue() != null) {
+            if (bluetoothGattCharacteristic.getValue() != null) { // if Value is NOT null then Value on Notification is not read yet
                 Log.d("CharWriteOperation", "#*#*#*#*#*#*#* Going to wait "
                         + LoggerUtil.bytesToHex(bluetoothGattCharacteristic.getValue()));
                 try {
-                    bluetoothGattCharacteristic.wait();
+                    bluetoothGattCharacteristic.wait(); // wait until Thread to finish reading Value on Notification
                     Log.d("CharWriteOperation", "#*#*#*#*#*#*#* Notified");
                 } catch (InterruptedException e) {
                     e.printStackTrace();
